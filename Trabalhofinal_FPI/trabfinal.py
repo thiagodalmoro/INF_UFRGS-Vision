@@ -10,12 +10,21 @@ import tkinter as tk
 import numpy as np
 import cv2
 
+def switches(switch):
+    cv2.createTrackbar(switch, 'Video Frame', 0, 1, applyVal)
+    cv2.createTrackbar('lower', 'Video Frame', 0, 255, applyVal)
+    cv2.createTrackbar('upper', 'Video Frame', 0, 255, applyVal)
+    cv2.createTrackbar('Blur', 'Video Frame', 3, 5, applyVal)
+
+
+
 
 def main():
     cap = cv2.VideoCapture(0)
 
     cv2.namedWindow('Video Frame')
 
+    switch = '0 : OFF \n1 : ON'
 
     switches(switch)
     while(True):

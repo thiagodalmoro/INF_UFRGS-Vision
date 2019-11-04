@@ -37,12 +37,12 @@ def switches(switch):
 switch = '0 : OFF \n1 : ON'
 
 
-def apply_rescale(frame, percent):
-    frame_width = int(frame.shape[1] * percent/ 100)
-    frame_height = int(frame.shape[0] * percent/ 100)
-    dim = (frame_width, frame_height)
-    resized_frame = cv2.resize(frame, dim, interpolation=cv2.INTER_AREA)
-    return resized_frame
+# def apply_rescale(frame, percent):
+#     frame_width = int(frame.shape[1] * percent/ 100)
+#     frame_height = int(frame.shape[0] * percent/ 100)
+#     dim = (frame_width, frame_height)
+#     resized_frame = cv2.resize(frame, dim, interpolation=cv2.INTER_AREA)
+#     return resized_frame
 
 
 def main ():
@@ -50,8 +50,8 @@ def main ():
 
     cv2.namedWindow('video')
 
-    # frame_width = camera.get(cv2.CAP_PROP_FRAME_WIDTH);
-    # frame_height = camera.get(cv2.CAP_PROP_FRAME_HEIGHT);
+    frame_width = camera.get(cv2.CAP_PROP_FRAME_WIDTH);
+    frame_height = camera.get(cv2.CAP_PROP_FRAME_HEIGHT);
 
     switch = '0 : OFF \n1 : ON'
     switches(switch)
@@ -97,7 +97,7 @@ def main ():
         # cv2.imshow('Video', frame)
 
 
-        resized_frame = apply_rescale(frame, 50) # downscale
+        # resized_frame = apply_rescale(frame, 50) # downscale
 
 
         #
