@@ -185,6 +185,48 @@ def adjust_axis_lines(m1,b1,m2,b2):
 
     return adjusted_axis
 
+def angle_between_lines(m1,b1,m2,b2):
+    try:
+        division = (m2 - m1) / (1 + m2*m1)
+    except:
+        return 0
+    angle = np.arctan(division)
+    return angle
+
+def calculate_angle_direction(m,b,angle):
+    #TODO
+    y0 = 0 * m + b
+    y1 = 1100 * m + b
+
+    if y1 - y0 > 0:
+        angle = -angle
+
+    return angle
+
+
+#TODO
+def find_axis_rotation(m1,b1,m2,b2):
+    m_horizontal = 0
+    b_horizontal = 1
+
+    angle1 = abs(angle_between_lines(m1,b1,m_horizontal,b_horizontal))
+    angle2 = abs(angle_between_lines(m2,b2,m_horizontal,b_horizontal))
+
+    angle1 = abs(angle1 - NINETY_DEGREES)
+    angle2 = abs(angle2 - NINETY_DEGREES)
+
+    #TODO
+    if angle1 < angle2:
+        angle_rotation = calculate_angle_direction(m2,b2,angle1)
+
+    else:
+        angle_rotation = calculate_angle_direction(m1,b1,angle2)
+
+    print(angle1)
+    print(angle2)
+    return abs(angle_rotation)
+
+
 def find_perpendicular_lines(lines):
     #Find lines equations (y = mx + b)
     axis_equations = find_lines_equation(lines)
@@ -195,7 +237,9 @@ def find_perpendicular_lines(lines):
     #As we were considering lines as a pair of 2 points/coordinates, we want both equations again in pair of points
     adjusted_axis = adjust_axis_lines(axis_equations[0][0],axis_equations[0][1],m,b)
 
-    return adjusted_axis
+    angle_rotation = find_axis_rotation(axis_equations[0][0],axis_equations[0][1],m,b)
+
+    return adjusted_axis, angle_rotation
 
 def find_axis(image):
 
@@ -207,9 +251,9 @@ def find_axis(image):
 
     lines_coordinates = translate_polar_coordinates(image, axis_lines)
 
-    adjusted_axis = find_perpendicular_lines(lines_coordinates)
+    adjusted_axis, angle_rotation = find_perpendicular_lines(lines_coordinates)
 
-    return adjusted_axis
+    return adjusted_axis, angle_rotation
 
 def draw_lines(src_image, lines,processed_image):
     for line in lines:
@@ -219,44 +263,56 @@ def draw_lines(src_image, lines,processed_image):
 
 def find_and_draw_axis(src_image):
     processed_image = process_image(src_image)
-    axis = find_axis(processed_image)
+    axis, angle_rotation = find_axis(processed_image)
     draw_lines(src_image, axis, processed_image)
     processed_image = remove_small_components(processed_image)
 
-    return src_image, processed_image
+    return src_image, processed_image, angle_rotation
 
-def draw_parabola(image,equation):
+def draw_parabola(image,equation, angle_rotation):
     for i in range(-1000,1000,1):
-        x = i
-        y = (equation[0] * (x**2)) + (equation[1] * x) + equation[2]
-        draw_point(image,x,y)
+        x0 = i
+        y0 = (equation[0] * (x0**2)) + (equation[1] * x0) + equation[2]
+        x = x0 * np.cos(-angle_rotation) - y0 * np.sin(-angle_rotation)
+        y = y0 * np.cos(-angle_rotation) + x0 * np.sin(-angle_rotation)
+
+        draw_point(image,int(x),int(y))
 
 def draw_point(image,x,y):
     center = (x,int(y))
     cv2.circle(image,center, 1, (0,0,255), 2)
 
-def find_parabola_points(edge_map_image):
+def find_parabola_points(edge_map_image, angle_rotation,image):
     width = len(edge_map_image[0])
     height = len(edge_map_image)
-
+    print('socorro')
+    print(angle_rotation)
+    # angle_rotation = 0.5
     coordinates = []
     for i in range(width):
         for j in range(height):
             if edge_map_image[j][i] != 0:
-                coordinates.append([i,j])
+                x0 = i
+                y0 = j
+                x = x0 * np.cos(angle_rotation) - y0 * np.sin(angle_rotation)
+                y = y0 * np.cos(angle_rotation) + x0 * np.sin(angle_rotation)
+                # cv2.circle(image, (int(x),int(y)), 1, (0,255,0), 2)
+                # coordinates.append([x,y])
+                coordinates.append([x,y])
+    # cv2.imshow('help', edge_map_image)
 
     return coordinates
 
-def find_and_draw_parabola(image, edge_map_image):
+def find_and_draw_parabola(image, edge_map_image,angle_rotation):
 
-    parabola_points = find_parabola_points(edge_map_image)
+    parabola_points = find_parabola_points(edge_map_image, angle_rotation,image)
     parabola_equation = find_parabola_equation(parabola_points)
-    draw_parabola(image, parabola_equation)
+    draw_parabola(image, parabola_equation, angle_rotation)
 
 def detect_axis_and_parabola(image_name):
     image = cv2.imread(image_name)
-    image, edge_map_image = find_and_draw_axis(image)
-    find_and_draw_parabola(image,edge_map_image)
+    image, edge_map_image, angle_rotation = find_and_draw_axis(image)
+    find_and_draw_parabola(image,edge_map_image, angle_rotation)
     cv2.imshow(image_name, image)
 
 # main()
