@@ -11,7 +11,7 @@ def mouse_drawing(event, x, y, flags, params):
         print("Left click")
         print(line)
 
-    # # Draw a diagonal blue line with thickness of 5 px
+# Draw a diagonal blue line with thickness of 5 px
 
 
 
@@ -19,6 +19,7 @@ def mouse_drawing(event, x, y, flags, params):
 
 #imagem 1 - Original
 img1 = cv.imread('exemplo1.jpg',1)
+
 gray = cv.cvtColor(img1, cv.COLOR_BGR2GRAY)
 
 cv.imshow('Image1', img1)
@@ -27,7 +28,8 @@ cv.namedWindow("Image1")
 
 cv.imshow ('Image Gray', gray)
 
-# cv.setMouseCallback("Image1", mouse_drawing)
+cv.setMouseCallback("Image1", mouse_drawing)
+
 kernel_size = 5
 blur_gray = cv.GaussianBlur(gray,(kernel_size, kernel_size),0)
 
@@ -70,10 +72,10 @@ color = (0,255,0)
 #pxl px
 thinckness = 1
 
-#
-# # # Draw a diagonal blue line with thickness of 5 px
-# img = cv.line(img1,start_pointy ,end_pointy,color,thinckness)
-# cv.imshow('ImageDraw', img)
+
+# # Draw a diagonal blue line with thickness of 5 px
+img = cv.line(img1,start_pointy ,end_pointy,color,thinckness)
+cv.imshow('ImageDraw', img)
 
 
 # # # Draw a diagonal blue line with thickness of 5 px
