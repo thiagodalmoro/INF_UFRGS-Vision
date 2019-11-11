@@ -2,7 +2,28 @@ import cv2
 import numpy as np
 import math
 
+import numpy as np
+np.warnings.filterwarnings('ignore')
+
 NINETY_DEGREES = np.pi/2.0
+
+def find_parabola_equation(points):
+    coefficients = []
+    values = []
+
+    #For each pair of points we set the equation (axˆ2, bx, c = y)
+    for x,y in points:
+        coefficients.append([x**2, x, 1])
+        values.append(y)
+
+    #We create the A and y from Ax = y
+    A = np.array(coefficients)
+    y = np.array(values)
+
+    #We solve Ax = y by least squares
+    equation = np.linalg.lstsq(A,y)[0]
+
+    return equation
 
 def calculate_line_intersection(line1, line2):
     xdiff = (line1[0][0] - line1[1][0], line2[0][0] - line2[1][0])
@@ -49,12 +70,36 @@ def translate_polar_coordinates (image, axis_lines):
 
     return lines_list
 
+def remove_small_components(img):
+    #find all your connected components (white blobs in your image)
+    nb_components, output, stats, centroids = cv2.connectedComponentsWithStats(img, connectivity=8)
+    #connectedComponentswithStats yields every seperated component with information on each of them, such as size
+    #the following part is just taking out the background which is also considered a component, but most of the time we don't want that.
+    sizes = stats[1:, -1]; nb_components = nb_components - 1
+
+    # minimum size of particles we want to keep (number of pixels)
+    #here, it's a fixed value, but you can set it as you want, eg the mean of the sizes or whatever
+    min_size = 500
+
+    #your answer image
+    img2 = np.zeros((output.shape))
+    #for every component in the image, you keep it only if it's above min_size
+    for i in range(0, nb_components):
+        if sizes[i] >= min_size:
+            img2[output == i + 1] = 255
+        pass
+
+    return img2
+
 def process_image(image):
+    #Since edge detection is susceptible to noise in the image, first step is to remove the noise in the image with a 5x5 Gaussian filter.
+    blur = cv2.GaussianBlur(image,(5,5),0)
+
     # Convert into gray scale image (for canny edge detection is preferred gray scale images)
-    gray = cv2.cvtColor(image,cv2.COLOR_BGR2GRAY)
+    gray = cv2.cvtColor(blur,cv2.COLOR_BGR2GRAY)
 
     # Process Edge Detection (gets the canny edge detection image)
-    lower_threshold = 100
+    lower_threshold = 50
     higher_threshold = 200
     edge_map_image = cv2.Canny(gray, lower_threshold, higher_threshold, apertureSize = 3)
 
@@ -154,7 +199,7 @@ def find_perpendicular_lines(lines):
 
 def find_axis(image):
 
-    #Apply Hough Transform (that returns the vector of lines) into the canny edge detection image
+    #Apply Hough Transform (returns the vector of lines) into the canny edge detection image
     accumulator_threshold = 150 # Threshold to consider a line ("votes necessaries to be considered line")
     hough_lines = cv2.HoughLines(image, 1, np.pi / 180, accumulator_threshold)
 
@@ -166,34 +211,60 @@ def find_axis(image):
 
     return adjusted_axis
 
-def draw_lines(src_image, lines):
+def draw_lines(src_image, lines,processed_image):
     for line in lines:
+        cv2.line(processed_image, ( line['x1'],  line['y1']), ( line['x2'],  line['y2']), (0, 0, 0), 80)
         cv2.line(src_image, ( line['x1'],  line['y1']), ( line['x2'],  line['y2']), (255, 0, 0), 2)
         pass
 
 def find_and_draw_axis(src_image):
     processed_image = process_image(src_image)
     axis = find_axis(processed_image)
-    draw_lines(src_image, axis)
+    draw_lines(src_image, axis, processed_image)
+    processed_image = remove_small_components(processed_image)
 
-    return src_image
+    return src_image, processed_image
+
+def draw_parabola(image,equation):
+    for i in range(-1000,1000,1):
+        x = i
+        y = (equation[0] * (x**2)) + (equation[1] * x) + equation[2]
+        draw_point(image,x,y)
+
+def draw_point(image,x,y):
+    center = (x,int(y))
+    cv2.circle(image,center, 1, (0,0,255), 2)
+
+def find_parabola_points(edge_map_image):
+    width = len(edge_map_image[0])
+    height = len(edge_map_image)
+
+    coordinates = []
+    for i in range(width):
+        for j in range(height):
+            if edge_map_image[j][i] != 0:
+                coordinates.append([i,j])
+
+    return coordinates
+
+def find_and_draw_parabola(image, edge_map_image):
+
+    parabola_points = find_parabola_points(edge_map_image)
+    parabola_equation = find_parabola_equation(parabola_points)
+    draw_parabola(image, parabola_equation)
+
+def detect_axis_and_parabola(image_name):
+    image = cv2.imread(image_name)
+    image, edge_map_image = find_and_draw_axis(image)
+    find_and_draw_parabola(image,edge_map_image)
+    cv2.imshow(image_name, image)
 
 # main()
 if __name__ == '__main__' :
 
-    img1 = cv2.imread('exemplo1.jpg')
-    img1 = find_and_draw_axis(img1)
-    cv2.imshow('Image1', img1)
-
-    img2 = cv2.imread('exemplo2.jpg')
-    img2 = find_and_draw_axis(img2)
-    cv2.imshow('Image2', img2)
-
-    img3 = cv2.imread('exemplo3.jpg')
-    img3 = find_and_draw_axis(img3)
-    cv2.imshow('Image3', img3)
-
-    # cv2.destroyAllWindows()
+    detect_axis_and_parabola('exemplo1.jpg')
+    detect_axis_and_parabola('exemplo2.jpg')
+    detect_axis_and_parabola('exemplo3.jpg')
 
     key = cv2.waitKey(0)
     if key == 27:  # wait for ESC
