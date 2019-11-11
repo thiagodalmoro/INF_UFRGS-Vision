@@ -2,7 +2,6 @@ import cv2
 import numpy as np
 import math
 
-import numpy as np
 np.warnings.filterwarnings('ignore')
 
 NINETY_DEGREES = np.pi/2.0
@@ -71,7 +70,7 @@ def translate_polar_coordinates (image, axis_lines):
     return lines_list
 
 def remove_small_components(img):
-    #find all your connected components (white blobs in your image)
+    #find all connected components (white blobs in your image)
     nb_components, output, stats, centroids = cv2.connectedComponentsWithStats(img, connectivity=8)
     #connectedComponentswithStats yields every seperated component with information on each of them, such as size
     #the following part is just taking out the background which is also considered a component, but most of the time we don't want that.
@@ -81,13 +80,12 @@ def remove_small_components(img):
     #here, it's a fixed value, but you can set it as you want, eg the mean of the sizes or whatever
     min_size = 500
 
-    #your answer image
+    # Answer image
     img2 = np.zeros((output.shape))
-    #for every component in the image, you keep it only if it's above min_size
+    #for every component in the image,  keep only if it's above min_size
     for i in range(0, nb_components):
         if sizes[i] >= min_size:
             img2[output == i + 1] = 255
-        pass
 
     return img2
 
@@ -194,49 +192,53 @@ def angle_between_lines(m1,b1,m2,b2):
     return angle
 
 def calculate_angle_direction(m,b,angle):
-    #TODO
+    #The X axis should be a horizontal straight line with a constant y
     y0 = 0 * m + b
     y1 = 1100 * m + b
 
+    #If Y decreases it's because it has a "clockwise" rotation direction
     if y1 - y0 > 0:
         angle = -angle
 
     return angle
 
 
-#TODO
 def find_axis_rotation(m1,b1,m2,b2):
     m_horizontal = 0
     b_horizontal = 1
 
+    #Angle between both lines and a horizontal straight line
     angle1 = abs(angle_between_lines(m1,b1,m_horizontal,b_horizontal))
     angle2 = abs(angle_between_lines(m2,b2,m_horizontal,b_horizontal))
 
+    #Calculate which line is the Y axis by comparing how close their angle is to 90 degress
     angle1 = abs(angle1 - NINETY_DEGREES)
     angle2 = abs(angle2 - NINETY_DEGREES)
 
-    #TODO
+    #Once we know which is the Y axis, we check the direction of the rotation analising X axis
     if angle1 < angle2:
         angle_rotation = calculate_angle_direction(m2,b2,angle1)
 
     else:
         angle_rotation = calculate_angle_direction(m1,b1,angle2)
 
-    print(angle1)
-    print(angle2)
     return abs(angle_rotation)
 
 
-def find_perpendicular_lines(lines):
-    #Find lines equations (y = mx + b)
-    axis_equations = find_lines_equation(lines)
+def find_perpendicular_lines(axis_lines):
+    #Find axis lines equations (y = mx + b)
+    axis_equations = find_lines_equation(axis_lines)
+
     #Calulate where they intercept each other
-    x_intersec,y_intersec = find_line_intersection(lines)
+    x_intersec,y_intersec = find_line_intersection(axis_lines)
+
     # Calculate the equation of a line that crosses the first axis and its orthogonal at the point where 2 axis intercept
     m,b = find_perpendicular_equation(axis_equations[0][0],axis_equations[0][1],x_intersec,y_intersec)
+
     #As we were considering lines as a pair of 2 points/coordinates, we want both equations again in pair of points
     adjusted_axis = adjust_axis_lines(axis_equations[0][0],axis_equations[0][1],m,b)
 
+    # Consider also the rotation the axis in the image
     angle_rotation = find_axis_rotation(axis_equations[0][0],axis_equations[0][1],m,b)
 
     return adjusted_axis, angle_rotation
@@ -249,13 +251,13 @@ def find_axis(image):
 
     axis_lines = find_axis_lines(hough_lines)
 
-    lines_coordinates = translate_polar_coordinates(image, axis_lines)
+    axis_lines_coordinates = translate_polar_coordinates(image, axis_lines)
 
-    adjusted_axis, angle_rotation = find_perpendicular_lines(lines_coordinates)
+    adjusted_axis, angle_rotation = find_perpendicular_lines(axis_lines_coordinates)
 
     return adjusted_axis, angle_rotation
 
-def draw_lines(src_image, lines,processed_image):
+def draw_axis_lines(src_image, lines,processed_image):
     for line in lines:
         cv2.line(processed_image, ( line['x1'],  line['y1']), ( line['x2'],  line['y2']), (0, 0, 0), 80)
         cv2.line(src_image, ( line['x1'],  line['y1']), ( line['x2'],  line['y2']), (255, 0, 0), 2)
@@ -264,7 +266,7 @@ def draw_lines(src_image, lines,processed_image):
 def find_and_draw_axis(src_image):
     processed_image = process_image(src_image)
     axis, angle_rotation = find_axis(processed_image)
-    draw_lines(src_image, axis, processed_image)
+    draw_axis_lines(src_image, axis, processed_image)
     processed_image = remove_small_components(processed_image)
 
     return src_image, processed_image, angle_rotation
@@ -285,9 +287,7 @@ def draw_point(image,x,y):
 def find_parabola_points(edge_map_image, angle_rotation,image):
     width = len(edge_map_image[0])
     height = len(edge_map_image)
-    print('socorro')
-    print(angle_rotation)
-    # angle_rotation = 0.5
+
     coordinates = []
     for i in range(width):
         for j in range(height):
@@ -296,15 +296,12 @@ def find_parabola_points(edge_map_image, angle_rotation,image):
                 y0 = j
                 x = x0 * np.cos(angle_rotation) - y0 * np.sin(angle_rotation)
                 y = y0 * np.cos(angle_rotation) + x0 * np.sin(angle_rotation)
-                # cv2.circle(image, (int(x),int(y)), 1, (0,255,0), 2)
-                # coordinates.append([x,y])
+
                 coordinates.append([x,y])
-    # cv2.imshow('help', edge_map_image)
 
     return coordinates
 
 def find_and_draw_parabola(image, edge_map_image,angle_rotation):
-
     parabola_points = find_parabola_points(edge_map_image, angle_rotation,image)
     parabola_equation = find_parabola_equation(parabola_points)
     draw_parabola(image, parabola_equation, angle_rotation)
