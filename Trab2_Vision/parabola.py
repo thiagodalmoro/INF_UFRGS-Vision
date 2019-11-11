@@ -8,8 +8,8 @@ def draw_parabola(image,equation, angle_rotation):
     for i in range(-1000,1000,1):
         x0 = i
         y0 = (equation[0] * (x0**2)) + (equation[1] * x0) + equation[2]
-        x = x0 * np.cos(-angle_rotation) - y0 * np.sin(-angle_rotation)
-        y = y0 * np.cos(-angle_rotation) + x0 * np.sin(-angle_rotation)
+        x = x0 * np.cos(angle_rotation) - y0 * np.sin(angle_rotation)
+        y = y0 * np.cos(angle_rotation) + x0 * np.sin(angle_rotation)
 
         draw_point(image,int(x),int(y))
 
@@ -18,17 +18,17 @@ def draw_point(image,x,y):
     cv2.circle(image,center, 1, (0,0,255), 2)
 
 def find_parabola_points(edge_map_image, angle_rotation,image):
+    angle = -angle_rotation
     width = len(edge_map_image[0])
     height = len(edge_map_image)
-
     coordinates = []
     for i in range(width):
         for j in range(height):
             if edge_map_image[j][i] != 0:
                 x0 = i
                 y0 = j
-                x = x0 * np.cos(angle_rotation) - y0 * np.sin(angle_rotation)
-                y = y0 * np.cos(angle_rotation) + x0 * np.sin(angle_rotation)
+                x = x0 * np.cos(angle) - y0 * np.sin(angle)
+                y = y0 * np.cos(angle) + x0 * np.sin(angle)
 
                 coordinates.append([x,y])
 
