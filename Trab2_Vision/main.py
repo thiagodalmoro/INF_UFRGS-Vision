@@ -4,6 +4,7 @@ from axis import *
 import cv2
 import numpy as np
 import math
+import argparse
 
 np.warnings.filterwarnings('ignore')
 
@@ -18,9 +19,10 @@ def detect_axis_and_parabola(image_name):
 # main()
 if __name__ == '__main__' :
 
-    detect_axis_and_parabola('exemplo1.jpg')
-    detect_axis_and_parabola('exemplo2.jpg')
-    detect_axis_and_parabola('exemplo3.jpg')
+    parser = argparse.ArgumentParser(description='Receive image')
+    parser.add_argument('-i', '--img', required=True, type=str, help='Input image path')
+    args = parser.parse_args()
+    detect_axis_and_parabola(args.img)
 
     key = cv2.waitKey(0)
     if key == 27:  # wait for ESC
