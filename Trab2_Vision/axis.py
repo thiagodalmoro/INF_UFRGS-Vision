@@ -175,10 +175,16 @@ def calculate_angle_direction(m,b,angle):
     y0 = 0 * m + b
     y1 = 1100 * m + b
 
-    #If Y decreases it's because it has a "clockwise" rotation direction
+    #If Y increases it's because it has positive rotation
     if y1 - y0 > 0:
+        angle = angle
+
+    #If Y decreases it's because it has negative rotation
+    if y1 - y0 < 0:
+        print('aqui')
         angle = -angle
 
+    print(angle)
     return angle
 
 def find_axis_rotation(m1,b1,m2,b2):
@@ -200,10 +206,7 @@ def find_axis_rotation(m1,b1,m2,b2):
     else:
         angle_rotation = calculate_angle_direction(m1,b1,angle2)
 
-    #We have to consider that working with images the Y axis grows going down ,
-    #so we have to invert de angle signal as we have used a logic considering Y would increase going up
-    angle_inverted_axis = -angle_rotation
-    return angle_inverted_axis
+    return angle_rotation
 
 def find_perpendicular_lines(axis_lines):
     #Find axis lines equations (y = mx + b)
