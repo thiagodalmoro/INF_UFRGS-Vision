@@ -2,27 +2,28 @@ import cv2
 import numpy as np
 import math
 
-np.warnings.filterwarnings('ignore')
 
 NINETY_DEGREES = np.pi/2.0
 
-def find_parabola_equation(points):
-    coefficients = []
-    values = []
+def remove_small_components(img):
+    #find all connected components (white blobs in your image)
+    nb_components, output, stats, centroids = cv2.connectedComponentsWithStats(img, connectivity=8)
+    #connectedComponentswithStats yields every seperated component with information on each of them, such as size
+    #the following part is just taking out the background which is also considered a component, but most of the time we don't want that.
+    sizes = stats[1:, -1]; nb_components = nb_components - 1
 
-    #For each pair of points we set the equation (axˆ2, bx, c = y)
-    for x,y in points:
-        coefficients.append([x**2, x, 1])
-        values.append(y)
+    # minimum size of particles we want to keep (number of pixels)
+    #here, it's a fixed value, but you can set it as you want, eg the mean of the sizes or whatever
+    min_size = 500
 
-    #We create the A and y from Ax = y
-    A = np.array(coefficients)
-    y = np.array(values)
+    # Answer image
+    img2 = np.zeros((output.shape))
+    #for every component in the image,  keep only if it's above min_size
+    for i in range(0, nb_components):
+        if sizes[i] >= min_size:
+            img2[output == i + 1] = 255
 
-    #We solve Ax = y by least squares
-    equation = np.linalg.lstsq(A,y)[0]
-
-    return equation
+    return img2
 
 def calculate_line_intersection(line1, line2):
     xdiff = (line1[0][0] - line1[1][0], line2[0][0] - line2[1][0])
@@ -39,7 +40,6 @@ def calculate_line_intersection(line1, line2):
     x = det(d, xdiff) / div
     y = det(d, ydiff) / div
     return x, y
-
 
 def translate_polar_coordinates (image, axis_lines):
     # Calulate the image larger measure (lenght or width) to fit the lines we will draw in the image
@@ -68,26 +68,6 @@ def translate_polar_coordinates (image, axis_lines):
         lines_list.append(coordinates)
 
     return lines_list
-
-def remove_small_components(img):
-    #find all connected components (white blobs in your image)
-    nb_components, output, stats, centroids = cv2.connectedComponentsWithStats(img, connectivity=8)
-    #connectedComponentswithStats yields every seperated component with information on each of them, such as size
-    #the following part is just taking out the background which is also considered a component, but most of the time we don't want that.
-    sizes = stats[1:, -1]; nb_components = nb_components - 1
-
-    # minimum size of particles we want to keep (number of pixels)
-    #here, it's a fixed value, but you can set it as you want, eg the mean of the sizes or whatever
-    min_size = 500
-
-    # Answer image
-    img2 = np.zeros((output.shape))
-    #for every component in the image,  keep only if it's above min_size
-    for i in range(0, nb_components):
-        if sizes[i] >= min_size:
-            img2[output == i + 1] = 255
-
-    return img2
 
 def process_image(image):
     #Since edge detection is susceptible to noise in the image, first step is to remove the noise in the image with a 5x5 Gaussian filter.
@@ -156,7 +136,6 @@ def find_line_intersection(lines):
 
     return x_intersec,y_intersec
 
-
 def find_lines_equation(lines):
     axis_equations = []
     for line_coords in lines:
@@ -196,12 +175,17 @@ def calculate_angle_direction(m,b,angle):
     y0 = 0 * m + b
     y1 = 1100 * m + b
 
-    #If Y decreases it's because it has a "clockwise" rotation direction
+    #If Y increases it's because it has positive rotation
     if y1 - y0 > 0:
+        angle = angle
+
+    #If Y decreases it's because it has negative rotation
+    if y1 - y0 < 0:
+        print('aqui')
         angle = -angle
 
+    print(angle)
     return angle
-
 
 def find_axis_rotation(m1,b1,m2,b2):
     m_horizontal = 0
@@ -222,8 +206,7 @@ def find_axis_rotation(m1,b1,m2,b2):
     else:
         angle_rotation = calculate_angle_direction(m1,b1,angle2)
 
-    return abs(angle_rotation)
-
+    return angle_rotation
 
 def find_perpendicular_lines(axis_lines):
     #Find axis lines equations (y = mx + b)
@@ -270,56 +253,3 @@ def find_and_draw_axis(src_image):
     processed_image = remove_small_components(processed_image)
 
     return src_image, processed_image, angle_rotation
-
-def draw_parabola(image,equation, angle_rotation):
-    for i in range(-1000,1000,1):
-        x0 = i
-        y0 = (equation[0] * (x0**2)) + (equation[1] * x0) + equation[2]
-        x = x0 * np.cos(-angle_rotation) - y0 * np.sin(-angle_rotation)
-        y = y0 * np.cos(-angle_rotation) + x0 * np.sin(-angle_rotation)
-
-        draw_point(image,int(x),int(y))
-
-def draw_point(image,x,y):
-    center = (x,int(y))
-    cv2.circle(image,center, 1, (0,0,255), 2)
-
-def find_parabola_points(edge_map_image, angle_rotation,image):
-    width = len(edge_map_image[0])
-    height = len(edge_map_image)
-
-    coordinates = []
-    for i in range(width):
-        for j in range(height):
-            if edge_map_image[j][i] != 0:
-                x0 = i
-                y0 = j
-                x = x0 * np.cos(angle_rotation) - y0 * np.sin(angle_rotation)
-                y = y0 * np.cos(angle_rotation) + x0 * np.sin(angle_rotation)
-
-                coordinates.append([x,y])
-
-    return coordinates
-
-def find_and_draw_parabola(image, edge_map_image,angle_rotation):
-    parabola_points = find_parabola_points(edge_map_image, angle_rotation,image)
-    parabola_equation = find_parabola_equation(parabola_points)
-    draw_parabola(image, parabola_equation, angle_rotation)
-
-def detect_axis_and_parabola(image_name):
-    image = cv2.imread(image_name)
-    image, edge_map_image, angle_rotation = find_and_draw_axis(image)
-    find_and_draw_parabola(image,edge_map_image, angle_rotation)
-    cv2.imshow(image_name, image)
-
-# main()
-if __name__ == '__main__' :
-
-    detect_axis_and_parabola('exemplo1.jpg')
-    detect_axis_and_parabola('exemplo2.jpg')
-    detect_axis_and_parabola('exemplo3.jpg')
-
-    key = cv2.waitKey(0)
-    if key == 27:  # wait for ESC
-        print('Key ESC pressed.')
-        cv2.destroyAllWindows()
