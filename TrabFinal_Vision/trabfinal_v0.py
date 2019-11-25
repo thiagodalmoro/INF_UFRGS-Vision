@@ -41,9 +41,9 @@ def draw_ball(frame,x,y):
     # draw_ball green
 
 
-# referencias de cores para a bola verde
-    low_red = np.array([20, 207, 139])
-    up_red = np.array([83, 255, 255])
+# # referencias de cores para a bola verde
+#     low_red = np.array([20, 207, 139])
+#     up_red = np.array([83, 255, 255])
 
 
 def rescale (frame, percent):

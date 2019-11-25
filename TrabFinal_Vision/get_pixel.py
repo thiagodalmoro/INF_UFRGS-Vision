@@ -18,7 +18,7 @@ def mouseRGB(event,x,y,flags,param):
 cv2.namedWindow('mouseRGB')
 cv2.setMouseCallback('mouseRGB',mouseRGB)
 
-cap = cv2.VideoCapture("CTL.mp4")
+cap = cv2.VideoCapture(0)
 
 while(True):
 
@@ -26,7 +26,7 @@ while(True):
 
     cv2.imshow('mouseRGB', frame)
 
-    if cv2.waitKey(10000) == 27:
+    if cv2.waitKey(0) == 27:
         break
 
 cap.release()

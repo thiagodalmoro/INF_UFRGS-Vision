@@ -1,9 +1,10 @@
 # USAGE
-# python ball_tracking.py --video ball_tracking_example.mp4
+# python ball_tracking.py --video CTL.mp4
 # python ball_tracking.py
 
 # import the necessary packages
 from collections import deque
+import collections
 from imutils.video import VideoStream
 import numpy as np
 import argparse
@@ -24,7 +25,7 @@ args = vars(ap.parse_args())
 # list of tracked points
 greenLower = (29, 86, 6)
 greenUpper = (64, 255, 255)
-pts = deque(maxlen=args["buffer"])
+# pts = deque(maxlen=args["buffer"])
 
 # if a video path was not supplied, grab the reference
 # to the webcam
