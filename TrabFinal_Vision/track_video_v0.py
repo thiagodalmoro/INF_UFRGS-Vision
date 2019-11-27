@@ -4,7 +4,8 @@ import numpy as np
 def nothing(x):
     pass
 
-cap = cv2.VideoCapture(0);
+# cap = cv2.VideoCapture(0);
+cap = cv2.VideoCapture("video.mp4")
 
 cv2.namedWindow("Tracking")
 cv2.createTrackbar("LH", "Tracking", 0, 255, nothing)
@@ -29,8 +30,9 @@ while True:
     u_v = cv2.getTrackbarPos("UV", "Tracking")
 
     l_b = np.array([l_h, l_s, l_v])
+    print(l_b)
     u_b = np.array([u_h, u_s, u_v])
-
+    print(u_b)
     mask = cv2.inRange(hsv, l_b, u_b)
 
     res = cv2.bitwise_and(frame, frame, mask=mask)
@@ -39,7 +41,7 @@ while True:
     cv2.imshow("mask", mask)
     cv2.imshow("res", res)
 
-    key = cv2.waitKey(1)
+    key = cv2.waitKey(100)
     if key == 27:
         break
 
