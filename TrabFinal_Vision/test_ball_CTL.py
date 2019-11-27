@@ -118,7 +118,7 @@ def main():
             if area > 10:
                 cv2.drawContours(frame, contour, -1, (0, 255, 0), 3)
                 print(contours)
-                
+
 
         cv2.imshow("Original", frame)
         # cv2.imshow("HSV", hsv)
