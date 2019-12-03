@@ -10,7 +10,6 @@ from PIL import Image, ImageEnhance
 import numpy as np
 # import argparse
 import cv2
-from scipy import spatial
 
 
 H_MIN = 0;
@@ -118,27 +117,7 @@ def main():
             area = cv2.contourArea(contour)
             if area > 10:
                 cv2.drawContours(frame, contour, -1, (0, 255, 0), 3)
-                # print('contour')
-                # print(contour)
-                # cnts = []
-                # for i,cnt in enumerate(contour):
-                #     cnt = np.array(cnt,dtype = np.int32)
-                #     cnts.append(cnt)
-                print('cnt')
-                test = np.array(contour)
-                print(test)
-                # two points which are fruthest apart will occur as vertices of the convex hull
-                candidates = test[spatial.ConvexHull(test).vertices]
-
-                # get distances between each pair of candidate points
-                dist_mat = spatial.distance_matrix(candidates, candidates)
-
-                # get indices of candidates that are furthest apart
-                i, j = np.unravel_index(dist_mat.argmax(), dist_mat.shape)
-
-                print(candidates[i], candidates[j])
-
-                a = input()
+                print(contours)
 
 
         cv2.imshow("Original", frame)
