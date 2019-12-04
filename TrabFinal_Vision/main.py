@@ -5,16 +5,17 @@ import imutils as imutils
 from PIL import Image, ImageEnhance
 # import tkinter as tk
 import math
-# from collections import deque
+from collections import deque
 # from imutils.video import VideoStream
 import numpy as np
 # import argparse
 import cv2
 from scipy import spatial
+import argparse
 
 NINETY_DEGREES = np.pi/2.0
 angle_threshold = np.pi / 16
-BALL_MIN_AREA = 16
+BALL_MIN_AREA = 33
 
 def slope_intercept_equation(coordinates):
     x1 = coordinates['x1']
@@ -125,7 +126,6 @@ def find_ball(mask):
     contours, _ = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
     if contours:
         contour = max(contours, key = cv2.contourArea)
-        print(cv2.contourArea(contour))
         if cv2.contourArea(contour) > BALL_MIN_AREA:
             test = np.array(contour.reshape(-1,2))
             # two points which are fruthest apart will occur as vertices of the convex hull
@@ -181,15 +181,18 @@ MAX_OBJECT_AREA = FRAME_HEIGHT*FRAME_WIDTH/1.5;
 
 
 
-def main():
+def main(debug_mode):
     rede = []
     camera = cv2.VideoCapture("video.mp4")
     # camera = cv2.VideoCapture(0)
     cv2.namedWindow('Original Output')
+    balls_positions = deque()
+    toque_recente = 0
+    has_to_write = 0
     #
     # switch = '0 : OFF \n1 : ON'
     # switches(switch)
-
+    i = 0
     while (True):
         ret, frame = camera.read()
         if not ret:
@@ -264,9 +267,48 @@ def main():
         #Desenha a bola
         ball_coord, ball_radius = find_ball(dilated_image)
         if ball_radius:
-            cv2.circle(frame, ball_coord, ball_radius, (0, 255, 0), 2)
+            if ball_radius > 5 or len(balls_positions) > 0:
+                cv2.circle(frame, ball_coord, ball_radius, (0, 255, 0), 2)
+                balls_positions.append(ball_coord)
+                if len(balls_positions) > 4:
+                    balls_positions.popleft()
+                    if debug_mode:
+                        cv2.circle(frame, balls_positions[2], ball_radius, (255, 0, 0), 2)
+                        cv2.circle(frame, balls_positions[1], ball_radius, (0, 0, 255), 2)
+                        cv2.circle(frame, balls_positions[0], ball_radius, (0, 255, 255), 2)
 
+                    y_atual = balls_positions[3][1]
+                    y_passado = balls_positions[2][1]
+                    y_retrasado = balls_positions[1][1]
+                    y_reretrasado = balls_positions[0][1]
 
+                    if toque_recente:
+                        toque_recente -=1
+                    elif (y_atual + 3 < y_passado and y_passado > y_retrasado) or (y_atual + 3 < y_retrasado and y_retrasado > y_reretrasado):
+                        i+=1
+                        print('b-2 ', balls_positions[0])
+                        print('b-1 ', balls_positions[1])
+                        print('b0 ', balls_positions[2])
+                        print(i, ' TOCOU')
+                        toque_recente = 3
+                        has_to_write = 5
+                    # elif y_atual + 3 < y_retrasado and y_retrasado > y_reretrasado:
+                    #     i+=1
+                    #     print('b-2 ', balls_positions[0])
+                    #     print('b-1 ', balls_positions[1])
+                    #     print('b0 ', balls_positions[2])
+                    #     print(i, ' TOCOU')
+                    #     toque_recente = 3
+                    #     has_to_write = 5
+
+        if has_to_write:
+            font = cv2.FONT_HERSHEY_SIMPLEX
+            org = (50, 50)
+            fontScale = 1
+            color = (0, 255, 255)
+            thickness = 2
+            cv2.putText(frame, 'Tocou!', org, font, fontScale, color, thickness, cv2.LINE_AA)
+            has_to_write -=1
 
         cv2.imshow("Original", frame)
         # cv2.imshow("HSV", hsv)
@@ -285,4 +327,8 @@ def main():
 
 
 if __name__ == '__main__':
-   main()
+    parser = argparse.ArgumentParser(description='Process flags')
+    parser.add_argument('-d', '--debug', default=0,
+                        type=int, help='Debug Mode')
+    args = parser.parse_args()
+    main(args.debug)
