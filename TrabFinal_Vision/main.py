@@ -189,6 +189,7 @@ def main(debug_mode):
     balls_positions = deque()
     toque_recente = 0
     has_to_write = 0
+    has_crossed= 0
     #
     # switch = '0 : OFF \n1 : ON'
     # switches(switch)
@@ -268,19 +269,23 @@ def main(debug_mode):
             x_bottom = int((y_bottom - b) / m)
             left_limit_rede = min(x_top,x_bottom)
             right_limit_rede = max(x_top,x_bottom)
+            actual_side = 0
+            last_side = 0
 
         cv2.line(frame,(rede['x1'],rede['y1']),(rede['x2'],rede['y2']),(0,255,0),2)
-        if right_limit_rede == x_top:
-            cv2.circle(frame, (x_top,y_top), 10, (255, 0, 0), 2)
-            cv2.circle(frame, (x_bottom,y_bottom), 10, (0, 0, 255), 2)
-        else:
-            cv2.circle(frame, (x_top,y_top), 10, (0, 0, 255), 2)
-            cv2.circle(frame, (x_bottom,y_bottom), 10, (255, 0, 0), 2)
 
         #Desenha a bola
         ball_coord, ball_radius = find_ball(dilated_image)
         if ball_radius:
             if ball_radius > 5 or len(balls_positions) > 0:
+                x_atual = ball_coord[0]
+                last_side = actual_side
+                if x_atual < left_limit_rede:
+                    actual_side = 'left'
+                elif x_atual > right_limit_rede:
+                    actual_side = 'right'
+                if actual_side != last_side and last_side:
+                    has_crossed = 4
                 cv2.circle(frame, ball_coord, ball_radius, (0, 255, 0), 2)
                 balls_positions.append(ball_coord)
                 if len(balls_positions) > 4:
@@ -312,7 +317,6 @@ def main(debug_mode):
                         max_old_y = max(y_passado, y_retrasado, y_reretrasado) + 2
                         #se considerar as posicoes passadas da bola e estarem no mesmo y (com ate 4 pixels de margem) pode ser que bola estivesse parada
                         if max_old_y - min_old_y <=0:
-                            x_atual = balls_positions[3][0]
                             x_passado = balls_positions[2][0]
                             x_retrasado = balls_positions[1][0]
                             x_reretrasado = balls_positions[0][0]
@@ -342,12 +346,27 @@ def main(debug_mode):
 
         if has_to_write:
             font = cv2.FONT_HERSHEY_SIMPLEX
-            org = (50, 50)
+            if actual_side == 'left':
+                org = (150, frame.shape[0] - 50)
+            else:
+                org = (frame.shape[1] - 250, frame.shape[0] - 50)
             fontScale = 1
             color = (0, 255, 255)
             thickness = 2
             cv2.putText(frame, 'Tocou!', org, font, fontScale, color, thickness, cv2.LINE_AA)
             has_to_write -=1
+
+        if has_crossed:
+            font = cv2.FONT_HERSHEY_SIMPLEX
+            if actual_side == 'left':
+                org = (150, 50)
+            else:
+                org = (frame.shape[1] - 250, 50)
+            fontScale = 1
+            color = (0, 255, 255)
+            thickness = 2
+            cv2.putText(frame, 'CRUZOU!', org, font, fontScale, color, thickness, cv2.LINE_AA)
+            has_crossed -=1
 
         cv2.imshow("Original", frame)
         # cv2.imshow("HSV", hsv)
