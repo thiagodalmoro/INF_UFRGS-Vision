@@ -284,22 +284,48 @@ def main(debug_mode):
 
                     if toque_recente:
                         toque_recente -=1
+                        #Tinha que estar descendo a bola (y estava aumentando) e de repente subir (y diminuir) com uma margem de 3 pixels
                     elif (y_atual + 3 < y_passado and y_passado > y_retrasado) or (y_atual + 3 < y_retrasado and y_retrasado > y_reretrasado):
                         i+=1
-                        print('b-2 ', balls_positions[0])
-                        print('b-1 ', balls_positions[1])
-                        print('b0 ', balls_positions[2])
+                        print('b-3 ', balls_positions[0])
+                        print('b-2 ', balls_positions[1])
+                        print('b-1 ', balls_positions[2])
+                        print('b0 ', balls_positions[3])
                         print(i, ' TOCOU')
                         toque_recente = 3
                         has_to_write = 5
-                    # elif y_atual + 3 < y_retrasado and y_retrasado > y_reretrasado:
-                    #     i+=1
-                    #     print('b-2 ', balls_positions[0])
-                    #     print('b-1 ', balls_positions[1])
-                    #     print('b0 ', balls_positions[2])
-                    #     print(i, ' TOCOU')
-                    #     toque_recente = 3
-                    #     has_to_write = 5
+                    else:
+                        min_old_y = min(y_passado, y_retrasado, y_reretrasado) - 2
+                        max_old_y = max(y_passado, y_retrasado, y_reretrasado) + 2
+                        #se considerar as posicoes passadas da bola e estarem no mesmo y (com ate 4 pixels de margem) pode ser que bola estivesse parada
+                        if max_old_y - min_old_y <=0:
+                            x_atual = balls_positions[3][0]
+                            x_passado = balls_positions[2][0]
+                            x_retrasado = balls_positions[1][0]
+                            x_reretrasado = balls_positions[0][0]
+                            min_old_x = min(x_passado, x_retrasado, x_reretrasado)
+                            max_old_x = max(x_passado, x_retrasado, x_reretrasado)
+                            #Testa se a bola se mexeu mais de 5 em x, o que significaria que houve toque de fato pra frente/tras
+                            if x_atual < min_old_x:
+                                if x_atual < min_old_x - 5:
+                                    print('b-3 ', balls_positions[0])
+                                    print('b-2 ', balls_positions[1])
+                                    print('b-1 ', balls_positions[2])
+                                    print('b0 ', balls_positions[3])
+                                    print(i, ' TOCOU')
+                                    toque_recente = 3
+                                    has_to_write = 5
+                            #Testa se a bola se mexeu mais de 5 em x, o que significaria que houve toque de fato pra frente/tras
+                            if x_atual > max_old_x:
+                                if x_atual > max_old_x + 5:
+                                    print('b-3 ', balls_positions[0])
+                                    print('b-2 ', balls_positions[1])
+                                    print('b-1 ', balls_positions[2])
+                                    print('b0 ', balls_positions[3])
+                                    print(i, ' TOCOU')
+                                    toque_recente = 3
+                                    has_to_write = 5
+
 
         if has_to_write:
             font = cv2.FONT_HERSHEY_SIMPLEX
