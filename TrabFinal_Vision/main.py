@@ -120,7 +120,7 @@ def find_rede(frame):
             rede = lines[i]
             break
         i+=1
-    return rede
+    return rede, m1, b1
 
 def find_ball(mask):
     contours, _ = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
@@ -261,8 +261,21 @@ def main(debug_mode):
 
         #Desenha a rede
         if not rede:
-            rede = find_rede(frame)
+            rede, m, b = find_rede(frame)
+            y_top = 0
+            x_top = int((y_top - b) / m)
+            y_bottom = frame.shape[0]
+            x_bottom = int((y_bottom - b) / m)
+            left_limit_rede = min(x_top,x_bottom)
+            right_limit_rede = max(x_top,x_bottom)
+
         cv2.line(frame,(rede['x1'],rede['y1']),(rede['x2'],rede['y2']),(0,255,0),2)
+        if right_limit_rede == x_top:
+            cv2.circle(frame, (x_top,y_top), 10, (255, 0, 0), 2)
+            cv2.circle(frame, (x_bottom,y_bottom), 10, (0, 0, 255), 2)
+        else:
+            cv2.circle(frame, (x_top,y_top), 10, (0, 0, 255), 2)
+            cv2.circle(frame, (x_bottom,y_bottom), 10, (255, 0, 0), 2)
 
         #Desenha a bola
         ball_coord, ball_radius = find_ball(dilated_image)
