@@ -190,6 +190,8 @@ def main(debug_mode):
     toque_recente = 0
     has_to_write = 0
     has_crossed= 0
+    left_touches = 0
+    right_touches = 0
     #
     # switch = '0 : OFF \n1 : ON'
     # switches(switch)
@@ -272,7 +274,6 @@ def main(debug_mode):
             actual_side = 0
             last_side = 0
 
-        cv2.line(frame,(rede['x1'],rede['y1']),(rede['x2'],rede['y2']),(0,255,0),2)
 
         #Desenha a bola
         ball_coord, ball_radius = find_ball(dilated_image)
@@ -312,6 +313,10 @@ def main(debug_mode):
                         print(i, ' TOCOU')
                         toque_recente = 3
                         has_to_write = 5
+                        if actual_side == 'left':
+                            left_touches +=1
+                        else:
+                            right_touches +=1
                     else:
                         min_old_y = min(y_passado, y_retrasado, y_reretrasado) - 2
                         max_old_y = max(y_passado, y_retrasado, y_reretrasado) + 2
@@ -332,6 +337,10 @@ def main(debug_mode):
                                     print(i, ' TOCOU')
                                     toque_recente = 3
                                     has_to_write = 5
+                                    if actual_side == 'left':
+                                        left_touches +=1
+                                    else:
+                                        right_touches +=1
                             #Testa se a bola se mexeu mais de 5 em x, o que significaria que houve toque de fato pra frente/tras
                             if x_atual > max_old_x:
                                 if x_atual > max_old_x + 5:
@@ -342,14 +351,18 @@ def main(debug_mode):
                                     print(i, ' TOCOU')
                                     toque_recente = 3
                                     has_to_write = 5
+                                    if actual_side == 'left':
+                                        left_touches +=1
+                                    else:
+                                        right_touches +=1
 
 
         if has_to_write:
             font = cv2.FONT_HERSHEY_SIMPLEX
             if actual_side == 'left':
-                org = (150, frame.shape[0] - 50)
+                org = (150, 50)
             else:
-                org = (frame.shape[1] - 250, frame.shape[0] - 50)
+                org = (frame.shape[1] - 250, 50)
             fontScale = 1
             color = (0, 255, 255)
             thickness = 2
@@ -359,14 +372,25 @@ def main(debug_mode):
         if has_crossed:
             font = cv2.FONT_HERSHEY_SIMPLEX
             if actual_side == 'left':
-                org = (150, 50)
+                org = (x_top - 200, 25)
             else:
-                org = (frame.shape[1] - 250, 50)
+                org = (x_top + 200, 25)
             fontScale = 1
             color = (0, 255, 255)
             thickness = 2
-            cv2.putText(frame, 'CRUZOU!', org, font, fontScale, color, thickness, cv2.LINE_AA)
+            cv2.putText(frame, 'Cruzou!', org, font, fontScale, color, thickness, cv2.LINE_AA)
             has_crossed -=1
+
+        font = cv2.FONT_HERSHEY_SIMPLEX
+        orgl = (int(frame.shape[1]/4 - 100),  frame.shape[0] - 50)
+        orgr = (int(3 * frame.shape[1]/4 - 100),  frame.shape[0] - 50)
+        fontScale = 1
+        color = (0, 255, 255)
+        thickness = 2
+        strl = 'Toques: ' + str(left_touches)
+        strr = 'Toques: ' + str(right_touches)
+        cv2.putText(frame, strl, orgl, font, fontScale, color, thickness, cv2.LINE_AA)
+        cv2.putText(frame, strr, orgr, font, fontScale, color, thickness, cv2.LINE_AA)
 
         cv2.imshow("Original", frame)
         # cv2.imshow("HSV", hsv)
