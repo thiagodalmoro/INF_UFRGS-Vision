@@ -183,7 +183,7 @@ MAX_OBJECT_AREA = FRAME_HEIGHT*FRAME_WIDTH/1.5;
 
 def main(debug_mode):
     rede = []
-    camera = cv2.VideoCapture("video.mp4")
+    camera = cv2.VideoCapture("v1.mp4")
     # camera = cv2.VideoCapture(0)
     cv2.namedWindow('Original Output')
     balls_positions = deque()
@@ -286,7 +286,7 @@ def main(debug_mode):
                 elif x_atual > right_limit_rede:
                     actual_side = 'right'
                 if actual_side != last_side and last_side:
-                    has_crossed = 4
+                    has_crossed = 6
                 cv2.circle(frame, ball_coord, ball_radius, (0, 255, 0), 2)
                 balls_positions.append(ball_coord)
                 if len(balls_positions) > 4:
@@ -318,10 +318,13 @@ def main(debug_mode):
                         else:
                             right_touches +=1
                     else:
-                        min_old_y = min(y_passado, y_retrasado, y_reretrasado) - 2
-                        max_old_y = max(y_passado, y_retrasado, y_reretrasado) + 2
+                        min_old_y = min(y_passado, y_retrasado, y_reretrasado)
+                        max_old_y = max(y_passado, y_retrasado, y_reretrasado)
+                        print('max_old_y', max_old_y)
+                        print('min_old_y', min_old_y)
+
                         #se considerar as posicoes passadas da bola e estarem no mesmo y (com ate 4 pixels de margem) pode ser que bola estivesse parada
-                        if max_old_y - min_old_y <=0:
+                        if max_old_y - min_old_y <=4:
                             x_passado = balls_positions[2][0]
                             x_retrasado = balls_positions[1][0]
                             x_reretrasado = balls_positions[0][0]
@@ -329,7 +332,7 @@ def main(debug_mode):
                             max_old_x = max(x_passado, x_retrasado, x_reretrasado)
                             #Testa se a bola se mexeu mais de 5 em x, o que significaria que houve toque de fato pra frente/tras
                             if x_atual < min_old_x:
-                                if x_atual < min_old_x - 5:
+                                if x_atual < min_old_x - 20:
                                     print('b-3 ', balls_positions[0])
                                     print('b-2 ', balls_positions[1])
                                     print('b-1 ', balls_positions[2])
@@ -343,7 +346,7 @@ def main(debug_mode):
                                         right_touches +=1
                             #Testa se a bola se mexeu mais de 5 em x, o que significaria que houve toque de fato pra frente/tras
                             if x_atual > max_old_x:
-                                if x_atual > max_old_x + 5:
+                                if x_atual > max_old_x + 20:
                                     print('b-3 ', balls_positions[0])
                                     print('b-2 ', balls_positions[1])
                                     print('b-1 ', balls_positions[2])
