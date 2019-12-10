@@ -151,39 +151,9 @@ def find_ball(mask):
             return (x,y), dist
     return (0,0), 0
 
-
-H_MIN = 0;
-H_MAX = 256;
-S_MIN = 0;
-S_MAX = 256;
-V_MIN = 0;
-V_MAX = 256;
-# default capture width and height
-FRAME_WIDTH = 640;
-FRAME_HEIGHT = 480;
-# max number of objects to be detected in frame
-MAX_NUM_OBJECTS=50;
-# minimum and maximum object area
-MIN_OBJECT_AREA = 20*20;
-MAX_OBJECT_AREA = FRAME_HEIGHT*FRAME_WIDTH/1.5;
-
-
-#
-# def switches(switch):
-#     cv2.createTrackbar(switch, 'Video Frame', 0, 1, applyVal)
-#     cv2.createTrackbar('lower', 'Video Frame', 0, 255, applyVal)
-#     cv2.createTrackbar('upper', 'Video Frame', 0, 255, applyVal)
-#     cv2.createTrackbar('Blur', 'Video Frame', 3, 5, applyVal)
-
-
-#
-# # determine upper and lower HSV limits for (my) skin tones
-
-
-
 def main(debug_mode):
     rede = []
-    camera = cv2.VideoCapture("v1.mp4")
+    camera = cv2.VideoCapture("v0.mp4")
     # camera = cv2.VideoCapture(0)
     cv2.namedWindow('Original Output')
     balls_positions = deque()
@@ -200,64 +170,14 @@ def main(debug_mode):
         ret, frame = camera.read()
         if not ret:
             continue
-        #
-        # lower_i = cv2.getTrackbarPos('lower', 'Original Output')
-        # upper_i = cv2.getTrackbarPos('upper', 'Original Output')
-        # s = cv2.getTrackbarPos(switch, 'Original Output')
-
-        # referencias de cores para a bola verde
-        # low_green = np.array([35, 40, 19])
-        # up_green = np.array([82, 246, 139])
 
         lower = np.array([20, 207, 139], dtype="uint8")
         upper = np.array([83,255,255], dtype="uint8")
-        # switches(switch)
-
-        # lower = np.array([35, 40, 19], dtype="uint8")
-        # upper = np.array([82, 246, 139], dtype="uint8")
-        #
-
-
-        # # switch to HSV
-
-        #green_low_new
-        # lower = np.array([17, 34, 18], dtype="uint8")
-        # upper = np.array([53, 139, 102], dtype="uint8")
 
         hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 
 
-        # #bola azul
-        # lower = np.array([55, 80, 26], dtype="uint8")
-        # upper = np.array([110, 255, 187], dtype="uint8")
-
-        # find mask of pixels within HSV range
         mask = cv2.inRange(hsv, lower, upper)
-
-        # cv2.imshow("Original", frame)
-        # # cv2.imshow("HSV", hsv)
-        # cv2.imshow("skinMask", mask)
-
-        # atualizar para a skinmask
-
-        # construct a mask for the color "green", then perform
-        # a series of dilations and erosions to remove any small
-        # blobs left in the mask
-        # mask = cv2.inRange(hsv, greenLower, greenUpper)
-
-        #
-        # mask = cv2.erode(mask, None, iterations=2)
-        # mask = cv2.dilate(mask, None, iterations=2)
-        #
-        # cv2.imshow("skinMask2", mask)
-
-        #
-        #
-        # # find contours in the mask and initialize the current
-        # # (x, y) center of the ball
-        # cnts, hierarchy = cv2.findContours(mask.copy(), cv2.RETR_EXTERNAL,
-        #                                    cv2.CHAIN_APPROX_SIMPLE)
-
 
         kernel = np.ones((5,5), np.uint8)
         dilated_image = cv2.dilate(mask, kernel, iterations=1)
@@ -275,19 +195,24 @@ def main(debug_mode):
             last_side = 0
 
 
-        #Desenha a bola
         ball_coord, ball_radius = find_ball(dilated_image)
+        #Testa se encontrou uma bola válida
         if ball_radius:
             if ball_radius > 5 or len(balls_positions) > 0:
                 x_atual = ball_coord[0]
                 last_side = actual_side
+
+                #Verifica em qual lado está a bola para ver se cruzou
                 if x_atual < left_limit_rede:
                     actual_side = 'left'
                 elif x_atual > right_limit_rede:
                     actual_side = 'right'
                 if actual_side != last_side and last_side:
                     has_crossed = 6
+                #Desenha a bola
                 cv2.circle(frame, ball_coord, ball_radius, (0, 255, 0), 2)
+
+                #Se houver suficientes posicoes passadas da bola começa a analisar o comportamento da bola
                 balls_positions.append(ball_coord)
                 if len(balls_positions) > 4:
                     balls_positions.popleft()
@@ -303,7 +228,8 @@ def main(debug_mode):
 
                     if toque_recente:
                         toque_recente -=1
-                        #Tinha que estar descendo a bola (y estava aumentando) e de repente subir (y diminuir) com uma margem de 3 pixels
+
+                    #Se a bola estava descendo (y estava aumentando) e de repente subir (y diminuir) com uma margem de 3 pixels alguém levantou ela, conta o toque
                     elif (y_atual + 3 < y_passado and y_passado > y_retrasado) or (y_atual + 3 < y_retrasado and y_retrasado > y_reretrasado):
                         i+=1
                         print('b-3 ', balls_positions[0])
@@ -396,8 +322,6 @@ def main(debug_mode):
         cv2.putText(frame, strr, orgr, font, fontScale, color, thickness, cv2.LINE_AA)
 
         cv2.imshow("Original", frame)
-        # cv2.imshow("HSV", hsv)
-        # cv2.imshow("skinMask", dilated_image)
 
 
         if cv2.waitKey(100) == 27:
@@ -405,11 +329,6 @@ def main(debug_mode):
 
     camera.release()
     cv2.destroyAllWindows()
-
-
-# def applyVal(value):
-#     print('Applying blur!', value)
-
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Process flags')
